@@ -54,35 +54,6 @@ The Gold layer includes:
 - Dim Date
 - Dim Geolocation
 
----
-
-# 📁 Repository Structure
-
-```md
-OLIST_PROJECT_ETL_AWS/
-│
-├── architecture/
-│   ├── medallion_overview.md
-│   ├── medallion.png
-│   └── star_schema.png
-│
-├── RAW/
-│   ├── Notebooks/
-│   │   ├── check_schemas.ipynb
-│   │   └── sample_schemas/
-│   │       ├── category_schema.json
-│   │       ├── customer_schema.json
-│   │       ├── geolocation_schema.json
-│   │       ├── items_schema.json
-│   │       ├── orders_schema.json
-│   │       ├── payments_schema.json
-│   │       ├── products_schema.json
-│   │       └── sellers_schema.json
-│
-├── venv/
-│
-└── README.md
-
 
 ---
 
@@ -135,6 +106,33 @@ Requirements:
 - [ ] Create Gold fact & dimension tables  
 - [ ] Add Athena/Glue catalog integration  
 - [ ] Build dashboards for analytics  
+
+# 📁 Repository Structure
+
+```md
+OLIST_PROJECT_ETL_AWS/
+│
+├── architecture/
+│   ├── medallion_overview.md
+│   ├── medallion.png
+│   └── star_schema.png
+│
+├── RAW/
+│   ├── Notebooks/
+│   │   ├── check_schemas.ipynb
+│   │   └── sample_schemas/
+│   │       ├── category_schema.json
+│   │       ├── customer_schema.json
+│   │       ├── geolocation_schema.json
+│   │       ├── items_schema.json
+│   │       ├── orders_schema.json
+│   │       ├── payments_schema.json
+│   │       ├── products_schema.json
+│   │       └── sellers_schema.json
+│
+├── venv/
+│
+└── README.md
 
 🧑‍💻 Author
 
