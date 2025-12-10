@@ -81,7 +81,7 @@ OLIST_PROJECT_ETL_AWS/
 │
 ├── venv/
 │
-└── README.md ```md
+└── README.md ```
 
 
 ---
