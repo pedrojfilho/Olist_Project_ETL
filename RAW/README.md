@@ -1,136 +1,109 @@
-<h1 align="center">🛠️ Olist Data Engineering Project — AWS Medallion Architecture</h1>
+# 🟫 RAW Layer — Olist Data Lake (AWS S3)
 
-<p align="center">
-  <strong>End-to-end Data Lakehouse built with PySpark, AWS S3, and the Medallion Architecture.</strong>
-</p>
-
----
-
-# 📌 Overview
-
-This project implements a full **Data Engineering pipeline** using the Olist e-commerce dataset and the **Medallion Architecture (Raw → Bronze → Silver → Gold)** on AWS S3.
-
-It simulates a real production scenario, including:
-
-- Data ingestion from CSV (Raw)
-- Transformation and standardization (Bronze)
-- Cleaning and enrichment (Silver)
-- Analytical modeling with Star Schema (Gold)
-- JSON schema versioning for all layers
-- Protected Git workflow with Pull Requests
+The **RAW layer** is the first zone of the Medallion Architecture and stores the Olist dataset **exactly as received**, in its original CSV format.  
+No transformations, cleaning, or type adjustments are performed at this stage.  
+This ensures full data lineage, traceability, and the ability to reprocess the dataset at any time.
 
 ---
 
-# 🏗️ Architecture
+## 📌 Purpose of the RAW Layer
 
-## 🔷 Medallion Architecture
-
-![Medallion Flow](architecture/medallion_flow.png)
-
-### 🟫 RAW
-Stores original CSV files exactly as received, without transformation.
-
-### 🟧 BRONZE
-Structured and standardized data, stored in Parquet format.
-
-### ⚪ SILVER
-Clean, enriched, analytics-ready data.
-
-### 🟨 GOLD
-Business-level tables in a **Star Schema** for BI tools and analytics.
+- Preserve original source data  
+- Enable auditing and full reproducibility  
+- Serve as the input for the Bronze ingestion process  
+- Maintain unmodified CSV files in AWS S3  
+- Provide schemas for each dataset using JSON definitions  
 
 ---
 
-# ⭐ Star Schema (Gold Layer)
+## 📂 RAW Data Stored in S3
 
-![Star Schema](architecture/star_schema.png)
+The following CSV files were uploaded to:
 
-The Gold layer includes:
+"s3://pedro-datalake-project/raw/"
 
-- Fact Sales
-- Dim Customer
-- Dim Product
-- Dim Seller
-- Dim Date
-- Dim Geolocation
+
+**CSV Tables:**
+
+- customers.csv  
+- orders.csv  
+- items.csv  
+- products.csv  
+- sellers.csv  
+- payments.csv  
+- geolocation.csv  
+- category.csv  
+
+Each CSV represents part of the Olist e-commerce dataset and serves as the raw source for downstream ETL processing.
 
 ---
 
-# 📁 Repository Structure
+## 🧾 Schema Extraction (JSON Files)
 
-OLIST_PROJECT_ETL_AWS/
+To improve documentation and data governance, the schema for each CSV file was extracted using PySpark and saved as structured **JSON schema files**.
+
+Each schema file includes:
+
+- Column names  
+- Data types  
+- Nullable attributes  
+- Metadata for downstream validation  
+
+These JSON files allow:
+
+- Schema versioning  
+- Comparison across layers (Bronze → Silver → Gold)  
+- Automatic validation in future pipelines  
+
+---
+
+## 📁 Folder Structure
+
+RAW/
 │
-├── architecture/
-│ ├── medallion_overview.md
-│ ├── medallion.png
-│ └── star_schema.png
+├── Notebooks/
+│ ├── check_schemas.ipynb # Notebook used to inspect CSV structure
+│ └── sample_schemas/ # Extracted schemas in JSON
+│ ├── category_schema.json
+│ ├── customer_schema.json
+│ ├── geolocation_schema.json
+│ ├── items_schema.json
+│ ├── orders_schema.json
+│ ├── payments_schema.json
+│ ├── products_schema.json
+│ └── sellers_schema.json
 │
-├── RAW/
-│ ├── Notebooks/
-│ │ ├── check_schemas.ipynb
-│ │ └── sample_schemas/
-│ │ ├── category_schema.json
-│ │ ├── customer_schema.json
-│ │ ├── geolocation_schema.json
-│ │ ├── items_schema.json
-│ │ ├── orders_schema.json
-│ │ ├── payments_schema.json
-│ │ ├── products_schema.json
-│ │ └── sellers_schema.json
-│
-├── venv/
-│
-├── README.md
+└── README_RAW.md
 
 
 ---
 
-# 🧰 Technologies Used
+## 🔍 Example Schema JSON Structure
 
-| Technology | Purpose |
-|-----------|---------|
-| AWS S3 | Data Lake storage |
-| PySpark | ETL processing and schema enforcement |
-| Parquet | Optimized columnar storage |
-| AWS CLI | Authentication and access |
-| Python | ETL logic and orchestration |
-| VSCode | Local development |
-| GitHub | Versioning and PR workflow |
+Each schema file follows a similar pattern:
 
----
+```json
+{
+  "table": "customers",
+  "columns": [
+    {"name": "customer_id", "type": "string", "nullable": true},
+    {"name": "customer_unique_id", "type": "string", "nullable": true},
+    {"name": "customer_zip_code_prefix", "type": "integer", "nullable": true},
+    {"name": "customer_city", "type": "string", "nullable": true},
+    {"name": "customer_state", "type": "string", "nullable": true}
+  ]
+}
 
-# ⚙️ Running the Project Locally
+🚀 Next Steps
 
-##  Initialize Spark with S3 Access
+Ingest these RAW CSVs into the Bronze layer
 
-# This project uses protected main branch + Pull Request workflow.
+Convert to Parquet format
 
-Branch strategy:
+Enforce schemas using the JSON definitions
 
-main                  → stable production branch
-feature/raw-layer     → Raw ingestion development
-feature/bronze-layer  → Bronze transformations
-feature/silver-layer  → Silver cleaning & enrichment
-feature/gold-layer    → Star schema modeling
-docs                  → Documentation updates
+Begin cleaning and enrichment for the Silver layer
 
-Requirements:
+🧑‍💻 Author
 
-- Pull Request is required to merge into main
-
-- Force push is blocked
-
-- Code review required
-
-- Conversation threads must be resolved
-
-# 📈 Roadmap
-
-- [x] Setup AWS & Spark environment  
-- [x] Load RAW CSV data from S3  
-- [x] Generate JSON schemas  
-- [ ] Implement Bronze transformations  
-- [ ] Build Silver layer cleaning  
-- [ ] Create Gold fact & dimension tables  
-- [ ] Add Athena/Glue catalog integration  
-- [ ] Build dashboards for analytics  
+Pedro Filho — Data Engineering Project (AWS + PySpark + Medallion Architecture)
