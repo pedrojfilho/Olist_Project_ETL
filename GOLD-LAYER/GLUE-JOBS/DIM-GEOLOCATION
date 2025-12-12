@@ -1,0 +1,31 @@
+import sys
+from awsglue.utils import getResolvedOptions
+from awsglue.context import GlueContext
+from awsglue.job import Job
+from pyspark.context import SparkContext
+import pyspark.sql.functions as F
+
+args = getResolvedOptions(sys.argv, ["JOB_NAME"])
+sc = SparkContext()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+job = Job(glueContext)
+job.init(args["JOB_NAME"], args)
+
+silver_geo = spark.read.parquet("s3://pedro-datalake-project/silver/geolocation/")
+
+df = (
+    silver_geo
+    .groupBy("geolocation_zip_code_prefix")
+    .agg(
+        F.first("geolocation_city").alias("city"),
+        F.first("geolocation_state").alias("state")
+    )
+    .withColumn("created_at", F.current_timestamp())
+)
+
+output_path = "s3://pedro-datalake-project/gold/dim_geolocation/"
+
+df.write.mode("overwrite").parquet(output_path)
+
+job.commit()

@@ -1,0 +1,36 @@
+import sys
+from awsglue.utils import getResolvedOptions
+from awsglue.context import GlueContext
+from awsglue.job import Job
+from pyspark.context import SparkContext
+import pyspark.sql.functions as F
+
+args = getResolvedOptions(sys.argv, ["JOB_NAME"])
+sc = SparkContext()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+job = Job(glueContext)
+job.init(args["JOB_NAME"], args)
+
+silver_sellers = spark.read.parquet("s3://pedro-datalake-project/silver/sellers/")
+
+regions = {
+    "AC": "Norte","AM": "Norte","RO": "Norte","RR": "Norte","PA": "Norte","AP": "Norte","TO": "Norte",
+    "MA": "Nordeste","PI": "Nordeste","CE": "Nordeste","RN": "Nordeste","PB": "Nordeste","PE": "Nordeste",
+    "AL": "Nordeste","SE": "Nordeste","BA": "Nordeste",
+    "SP": "Sudeste","RJ": "Sudeste","MG": "Sudeste","ES": "Sudeste",
+    "PR": "Sul","SC": "Sul","RS": "Sul",
+    "MT": "Centro-Oeste","MS": "Centro-Oeste","GO": "Centro-Oeste","DF": "Centro-Oeste"
+}
+
+region_expr = F.create_map([F.lit(x) for p in regions.items() for x in p])
+
+df = (
+    silver_sellers
+    .withColumn("region", region_expr[F.col("seller_state")])
+    .withColumn("created_at", F.current_timestamp())
+)
+
+df.write.mode("overwrite").parquet("s3://pedro-datalake-project/gold/dim_sellers/")
+
+job.commit()
