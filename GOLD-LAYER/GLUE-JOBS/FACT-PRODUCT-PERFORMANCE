@@ -1,0 +1,48 @@
+import sys
+from awsglue.utils import getResolvedOptions
+from awsglue.context import GlueContext
+from awsglue.job import Job
+from pyspark.context import SparkContext
+import pyspark.sql.functions as F
+
+args = getResolvedOptions(sys.argv, ["JOB_NAME"])
+sc = SparkContext()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+job = Job(glueContext)
+job.init(args["JOB_NAME"], args)
+
+fact_orders = spark.read.parquet("s3://pedro-datalake-project/gold/fact_orders/")
+products_dim = spark.read.parquet("s3://pedro-datalake-project/gold/dim_products/")
+
+df = (
+    fact_orders.alias("f")
+    .join(
+        products_dim.select("product_id", "product_category_name"),
+        "product_id",
+        "left"
+    )
+)
+
+df_product = (
+    df.groupBy("product_id", "product_category_name")
+      .agg(
+          F.count("order_id").alias("total_orders"),
+          F.countDistinct("customer_id").alias("total_customers"),
+          F.sum("price").alias("total_revenue"),
+          F.sum("freight_value").alias("total_freight"),
+          F.avg("price").alias("avg_price"),
+          F.avg("freight_value").alias("avg_freight"),
+          F.sum(F.when(F.col("is_delayed") == True, 1).otherwise(0)).alias("late_deliveries")
+      )
+)
+
+df_product = df_product.withColumn(
+    "pct_late",
+    F.col("late_deliveries") / F.col("total_orders")
+).withColumn("created_at", F.current_timestamp())
+
+output = "s3://pedro-datalake-project/gold/fact_product_performance/"
+df_product.write.mode("overwrite").parquet(output)
+
+job.commit()
