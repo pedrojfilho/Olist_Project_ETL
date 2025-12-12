@@ -13,15 +13,15 @@ spark = glueContext.spark_session
 job = Job(glueContext)
 job.init(args['JOB_NAME'], args)
 
-bronze_path = "s3://pedro-datalake-project/bronze/products/"
+bronze_path = "s3://pedro-datalake-project/bronze/sellers/"
 df = spark.read.parquet(bronze_path)
-
 
 df_silver = (
     df
-    .withColumn("product_category_name", F.lower(F.trim("product_category_name")))
+    .withColumn("seller_city", F.lower(F.trim("seller_city")))
+    .withColumn("seller_state", F.upper("seller_state"))
+    .withColumn("seller_zip_code_prefix", F.format_string("%05d", F.col("seller_zip_code_prefix")))
 )
-
 
 replacements = {
     "á": "a", "à": "a", "ã": "a", "â": "a",
@@ -34,32 +34,25 @@ replacements = {
 
 for accented, plain in replacements.items():
     df_silver = df_silver.withColumn(
-        "product_category_name",
-        F.regexp_replace("product_category_name", accented, plain)
+        "seller_city",
+        F.regexp_replace("seller_city", accented, plain)
     )
+
 
 df_silver = (
     df_silver
     .withColumn("audit_timestamp", F.current_timestamp())
     .select(
-        "product_id",
-        "product_category_name",
-        "product_name_lenght",
-        "product_description_lenght",
-        "product_photos_qty",
-        "product_weight_g",
-        "product_length_cm",
-        "product_height_cm",
-        "product_width_cm",
+        "seller_id",
+        "seller_zip_code_prefix",
+        "seller_city",
+        "seller_state",
         "audit_timestamp"
     )
 )
 
-# ========================
-# 5) Write Silver
-# ========================
-silver_path = "s3://pedro-datalake-project/silver/products/"
+silver_path = "s3://pedro-datalake-project/silver/sellers/"
 df_silver.write.mode("overwrite").parquet(silver_path)
 
-print("✔ Silver products written:", silver_path)
+print("✔ Silver sellers written:", silver_path)
 job.commit()
