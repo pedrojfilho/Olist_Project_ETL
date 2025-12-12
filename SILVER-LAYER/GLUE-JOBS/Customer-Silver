@@ -55,6 +55,6 @@ silver_path = "s3://pedro-datalake-project/silver/customers/"
 
 df_silver.write.mode("overwrite").parquet(silver_path)
 
-print("Silver customers gerado com sucesso em:", silver_path)
+print("Silver customer written:", silver_path)
 
 job.commit()

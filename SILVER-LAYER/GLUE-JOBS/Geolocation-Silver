@@ -61,6 +61,6 @@ silver_path = "s3://pedro-datalake-project/silver/geolocation/"
 
 df_silver.write.mode("overwrite").parquet(silver_path)
 
-print("Silver geolocation gerado com sucesso em:", silver_path)
+print("Silver geolocation written at:", silver_path)
 
 job.commit()

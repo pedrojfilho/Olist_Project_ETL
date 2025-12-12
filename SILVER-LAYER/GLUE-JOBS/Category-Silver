@@ -43,6 +43,6 @@ silver_path = "s3://pedro-datalake-project/silver/category/"
 
 df_silver.write.mode("overwrite").parquet(silver_path)
 
-print("Silver category gerado com sucesso em:", silver_path)
+print("Silver category written:", silver_path)
 
 job.commit()

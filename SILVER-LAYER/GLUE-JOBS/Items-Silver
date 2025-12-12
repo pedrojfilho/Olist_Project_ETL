@@ -39,5 +39,5 @@ df_silver = df_silver.select(
 silver_path = "s3://pedro-datalake-project/silver/items/"
 df_silver.write.mode("overwrite").parquet(silver_path)
 
-print("✔ Silver order_items written at:", silver_path)
+print("Silver items written at:", silver_path)
 job.commit()
