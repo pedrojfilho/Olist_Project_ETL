@@ -1,0 +1,49 @@
+import sys
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from awsglue.context import GlueContext
+from awsglue.job import Job
+from pyspark.sql import functions as F
+
+## @params: [JOB_NAME]
+args = getResolvedOptions(sys.argv, ['JOB_NAME'])
+
+sc = SparkContext()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+job = Job(glueContext)
+job.init(args['JOB_NAME'], args)
+
+
+bronze_path = "s3://pedro-datalake-project/bronze/category/"
+
+df = spark.read.parquet(bronze_path)
+
+
+df_clean = (
+    df.filter(
+        (df["col0"] != "product_category_name") &
+        (df["col1"] != "product_category_name_english")
+    )
+)
+
+df_silver = (
+    df_clean
+        .select(F.col("col1").alias("category_name_english"))
+        .withColumn("category_name_english", F.lower(F.col("category_name_english")))
+        .withColumn(
+            "category_name_english",
+            F.regexp_replace("category_name_english", "[^a-z0-9_]", "")
+        )
+        .withColumn("audit_timestamp", F.current_timestamp())
+)
+
+df_silver = df_silver.dropDuplicates(["category_name_english"])
+
+silver_path = "s3://pedro-datalake-project/silver/category/"
+
+df_silver.write.mode("overwrite").parquet(silver_path)
+
+print("Silver category gerado com sucesso em:", silver_path)
+
+job.commit()
