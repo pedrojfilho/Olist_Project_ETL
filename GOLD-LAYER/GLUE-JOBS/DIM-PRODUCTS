@@ -1,0 +1,28 @@
+import sys
+from awsglue.utils import getResolvedOptions
+from awsglue.context import GlueContext
+from awsglue.job import Job
+from pyspark.context import SparkContext
+import pyspark.sql.functions as F
+
+args = getResolvedOptions(sys.argv, ["JOB_NAME"])
+sc = SparkContext()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+job = Job(glueContext)
+job.init(args["JOB_NAME"], args)
+
+silver_products = spark.read.parquet("s3://pedro-datalake-project/silver/products/")
+
+df = (
+    silver_products
+    .withColumn("volume_cm3", 
+                F.col("product_length_cm") * F.col("product_height_cm") * F.col("product_width_cm"))
+    .withColumn("density", F.col("product_weight_g") / F.col("volume_cm3"))
+    .withColumn("is_bulky", F.col("volume_cm3") > 20000)
+    .withColumn("created_at", F.current_timestamp())
+)
+
+df.write.mode("overwrite").parquet("s3://pedro-datalake-project/gold/dim_products/")
+
+job.commit()

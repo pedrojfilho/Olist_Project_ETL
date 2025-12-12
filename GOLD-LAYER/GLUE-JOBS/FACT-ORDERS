@@ -1,0 +1,76 @@
+import sys
+from awsglue.utils import getResolvedOptions
+from awsglue.context import GlueContext
+from awsglue.job import Job
+from pyspark.context import SparkContext
+import pyspark.sql.functions as F
+
+args = getResolvedOptions(sys.argv, ["JOB_NAME"])
+sc = SparkContext()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+job = Job(glueContext)
+job.init(args["JOB_NAME"], args)
+
+orders = (
+    spark.read.parquet("s3://pedro-datalake-project/silver/orders/")
+    .drop("audit_timestamp")
+)
+
+order_items = (
+    spark.read.parquet("s3://pedro-datalake-project/silver/items/")
+    .drop("audit_timestamp")
+)
+
+payments = (
+    spark.read.parquet("s3://pedro-datalake-project/silver/payments/")
+    .drop("audit_timestamp")
+)
+
+sellers = (
+    spark.read.parquet("s3://pedro-datalake-project/silver/sellers/")
+    .drop("audit_timestamp")
+)
+
+customers_dim = spark.read.parquet("s3://pedro-datalake-project/gold/dim_customer/")
+
+payments_agg = (
+    payments.groupBy("order_id")
+    .agg(
+        F.sum("payment_value").alias("total_paid"),
+        F.first("payment_type").alias("payment_type"),
+        F.first("payment_installments").alias("payment_installments")
+    )
+)
+
+df = (
+    orders.alias("o")
+    .join(order_items.alias("i"), "order_id", "left")
+    .join(payments_agg.alias("p"), "order_id", "left")
+)
+
+df = df.join(sellers.alias("s"), "seller_id", "left")
+
+df = df.join(
+    customers_dim.select("customer_id", "customer_sk"),
+    "customer_id",
+    "left"
+)
+
+df = (
+    df.withColumn(
+        "delivery_days",
+        F.datediff("order_delivered_customer_date", "order_purchase_timestamp")
+    )
+    .withColumn(
+        "is_delayed",
+        F.col("order_delivered_customer_date") > F.col("order_estimated_delivery_date")
+    )
+    .withColumn("created_at", F.current_timestamp())
+)
+
+output = "s3://pedro-datalake-project/gold/fact_orders/"
+
+df.write.mode("overwrite").parquet(output)
+
+job.commit()

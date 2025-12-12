@@ -1,0 +1,81 @@
+import sys
+from awsglue.utils import getResolvedOptions
+from awsglue.context import GlueContext
+from awsglue.job import Job
+from pyspark.context import SparkContext
+import pyspark.sql.functions as F
+
+args = getResolvedOptions(sys.argv, ["JOB_NAME"])
+sc = SparkContext()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+job = Job(glueContext)
+job.init(args["JOB_NAME"], args)
+
+start_date = "2000-01-01"
+end_date = "2030-12-31"
+
+df_dates = spark.sql(f"""
+    SELECT explode(sequence(to_date('{start_date}'), to_date('{end_date}'), interval 1 day)) AS date
+""")
+
+
+df_dim_date = (
+    df_dates
+    .withColumn("date_key", F.date_format(F.col("date"), "yyyyMMdd").cast("int"))
+    .withColumn("year", F.year("date"))
+    .withColumn("month", F.month("date"))
+    .withColumn("day", F.dayofmonth("date"))
+    .withColumn("spark_dayofweek", F.dayofweek("date"))
+    .withColumn(
+        "day_of_week",
+        F.when(F.col("spark_dayofweek") == 1, F.lit(7))  
+         .otherwise(F.col("spark_dayofweek") - 1)        
+    )
+
+
+    .withColumn(
+        "weekday_name",
+        F.when(F.col("day_of_week") == 1, F.lit("Monday"))
+         .when(F.col("day_of_week") == 2, F.lit("Tuesday"))
+         .when(F.col("day_of_week") == 3, F.lit("Wednesday"))
+         .when(F.col("day_of_week") == 4, F.lit("Thursday"))
+         .when(F.col("day_of_week") == 5, F.lit("Friday"))
+         .when(F.col("day_of_week") == 6, F.lit("Saturday"))
+         .otherwise(F.lit("Sunday"))
+    )
+
+    .withColumn(
+        "month_name",
+        F.when(F.col("month") == 1, F.lit("January"))
+         .when(F.col("month") == 2, F.lit("February"))
+         .when(F.col("month") == 3, F.lit("March"))
+         .when(F.col("month") == 4, F.lit("April"))
+         .when(F.col("month") == 5, F.lit("May"))
+         .when(F.col("month") == 6, F.lit("June"))
+         .when(F.col("month") == 7, F.lit("July"))
+         .when(F.col("month") == 8, F.lit("August"))
+         .when(F.col("month") == 9, F.lit("September"))
+         .when(F.col("month") == 10, F.lit("October"))
+         .when(F.col("month") == 11, F.lit("November"))
+         .otherwise(F.lit("December"))
+    )
+
+    .withColumn("quarter", F.quarter("date"))
+    .withColumn("year_month", F.date_format(F.col("date"), "yyyy-MM"))
+    .withColumn("year_week", F.concat_ws("-", F.year("date"), F.weekofyear("date")))
+    .withColumn("is_weekend", F.col("day_of_week").isin([6, 7]))
+
+    .drop("spark_dayofweek")
+)
+
+output_path = "s3://pedro-datalake-project/gold/dim_date/"
+
+(
+    df_dim_date
+    .write
+    .mode("overwrite")
+    .parquet(output_path)
+)
+
+job.commit()

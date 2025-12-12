@@ -1,0 +1,74 @@
+import sys
+from awsglue.utils import getResolvedOptions
+from awsglue.context import GlueContext
+from awsglue.job import Job
+from pyspark.context import SparkContext
+import pyspark.sql.functions as F
+from pyspark.sql.window import Window
+
+args = getResolvedOptions(sys.argv, ["JOB_NAME"])
+sc = SparkContext()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+job = Job(glueContext)
+job.init(args["JOB_NAME"], args)
+
+silver_customer = spark.read.parquet("s3://pedro-datalake-project/silver/customers/")
+silver_orders   = spark.read.parquet("s3://pedro-datalake-project/silver/orders/")
+
+order_metrics = (
+    silver_orders
+    .groupBy("customer_id")
+    .agg(
+        F.min("order_purchase_timestamp").alias("first_order_date"),
+        F.max("order_purchase_timestamp").alias("last_order_date"),
+        F.count("*").alias("total_orders")
+    )
+)
+
+max_date = silver_orders.select(F.max("order_purchase_timestamp")).collect()[0][0]
+
+order_metrics = order_metrics.withColumn(
+    "recency_days",
+    F.datediff(F.lit(max_date), F.col("last_order_date"))
+)
+
+window_spec = Window.orderBy("c.customer_id")
+
+dim_customer = (
+    silver_customer.alias("c")
+    .join(order_metrics.alias("m"), F.col("c.customer_id") == F.col("m.customer_id"), "left")
+    .select(
+        F.row_number().over(window_spec).alias("customer_sk"),
+        F.col("c.customer_id"),
+        F.col("c.customer_unique_id"),
+        F.col("c.customer_zip_code_prefix"),
+        F.col("c.customer_city"),
+        F.col("c.customer_state"),
+        F.col("m.first_order_date"),
+        F.col("m.last_order_date"),
+        F.col("m.total_orders"),
+        F.col("m.recency_days")
+    )
+)
+
+regions = {
+    "AC": "Norte", "AM": "Norte", "RO": "Norte", "RR": "Norte", "PA": "Norte", "AP": "Norte", "TO": "Norte",
+    "MA": "Nordeste", "PI": "Nordeste", "CE": "Nordeste", "RN": "Nordeste", "PB": "Nordeste", "PE": "Nordeste",
+    "AL": "Nordeste", "SE": "Nordeste", "BA": "Nordeste",
+    "SP": "Sudeste", "RJ": "Sudeste", "MG": "Sudeste", "ES": "Sudeste",
+    "PR": "Sul", "SC": "Sul", "RS": "Sul",
+    "MT": "Centro-Oeste", "MS": "Centro-Oeste", "GO": "Centro-Oeste", "DF": "Centro-Oeste"
+}
+
+region_expr = F.create_map([F.lit(x) for pair in regions.items() for x in pair])
+
+dim_customer = dim_customer.withColumn("region", region_expr[F.col("customer_state")])
+
+dim_customer = dim_customer.withColumn("created_at", F.current_timestamp())
+
+output_path = "s3://pedro-datalake-project/gold/dim_customer/"
+
+dim_customer.write.mode("overwrite").parquet(output_path)
+
+job.commit()
