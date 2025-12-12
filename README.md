@@ -53,7 +53,9 @@ The Gold layer includes:
 - Dim Seller
 - Dim Date
 - Dim Geolocation
-
+- fact_orders — base transactional fact table
+- fact_seller_performance — seller-level aggregated KPIs
+- fact_product_performance — product-level aggregated KPIs
 
 ---
 
