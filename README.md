@@ -114,27 +114,102 @@ Requirements:
 ```md
 OLIST_PROJECT_ETL_AWS/
 │
-├── architecture/
-│   ├── medallion_overview.md
-│   ├── medallion.png
-│   └── star_schema.png
+├── ARCHITECTURE/
+│ ├── medallion_overview.md # Medallion architecture explanation
+│ ├── medallion.png # Medallion architecture diagram
+│ └── star_schema.png # Star Schema diagram (Gold layer)
 │
 ├── RAW/
-│   ├── Notebooks/
-│   │   ├── check_schemas.ipynb
-│   │   └── sample_schemas/
-│   │       ├── category_schema.json
-│   │       ├── customer_schema.json
-│   │       ├── geolocation_schema.json
-│   │       ├── items_schema.json
-│   │       ├── orders_schema.json
-│   │       ├── payments_schema.json
-│   │       ├── products_schema.json
-│   │       └── sellers_schema.json
+│ ├── Notebooks/
+│ │ └── check_schemas.ipynb # Schema validation and inspection
+│ │
+│ ├── sample_schemas/ # Expected RAW schemas
+│ │ ├── category_schema.json
+│ │ ├── customer_schema.json
+│ │ ├── geolocation_schema.json
+│ │ ├── items_schema.json
+│ │ ├── orders_schema.json
+│ │ ├── payments_schema.json
+│ │ ├── products_schema.json
+│ │ └── sellers_schema.json
+│ │
+│ └── README.md # RAW layer documentation
 │
-├── venv/
+├── BRONZE-LAYER/
+│ ├── GLUE-JOBS/
+│ │ └── job-raw-to-bronze.py # Glue job: RAW → Bronze
+│ │
+│ ├── Notebooks/
+│ │ └── create-samples-bronze.ipynb
+│ │
+│ ├── SAMPLES-PARQUET/ # Bronze sample data
+│ │ ├── category_sample.parquet
+│ │ ├── customers_sample.parquet
+│ │ ├── geolocation_sample.parquet
+│ │ ├── items_sample.parquet
+│ │ ├── orders_sample.parquet
+│ │ ├── payments_sample.parquet
+│ │ ├── products_sample.parquet
+│ │ └── sellers_sample.parquet
+│ │
+│ └── README.md # Bronze layer documentation
 │
-└── README.md
+├── SILVER-LAYER/
+│ ├── GLUE-JOBS/
+│ │ ├── Category-Silver/
+│ │ ├── Customer-Silver/
+│ │ ├── Geolocation-Silver/
+│ │ ├── Items-Silver/
+│ │ ├── Orders-Silver/
+│ │ ├── Payments-Silver/
+│ │ ├── Products-Silver/
+│ │ └── Seller-Silver/
+│ │
+│ ├── Notebooks/
+│ │ ├── category-silver-analysis.ipynb
+│ │ ├── customer-silver-analysis.ipynb
+│ │ ├── geolocation-silver-analysis.ipynb
+│ │ ├── items-silver-analysis.ipynb
+│ │ ├── orders-silver-analysis.ipynb
+│ │ ├── payments-silver-analysis.ipynb
+│ │ ├── products-silver-analysis.ipynb
+│ │ └── sellers-silver-analysis.ipynb
+│ │
+│ └── README.md # Silver layer documentation
+│
+├── GOLD-LAYER/
+│ ├── GLUE-JOBS/
+│ │ ├── DIM-CUSTOMER/
+│ │ ├── DIM-DATE/
+│ │ ├── DIM-GEOLOCATION/
+│ │ ├── DIM-PRODUCTS/
+│ │ ├── DIM-SELLERS/
+│ │ ├── FACT-ORDERS/
+│ │ ├── FACT-PRODUCT-PERFORMANCE/
+│ │ └── FACT-SELLER-PERFORMANCE/
+│ │
+│ ├── Notebooks/
+│ │ ├── create-dim-date.ipynb
+│ │ ├── create-dim-customer.ipynb
+│ │ ├── create-dim-products.ipynb
+│ │ ├── create-dim-sellers.ipynb
+│ │ ├── create-dim-geolocation.ipynb
+│ │ ├── create-fact-orders.ipynb
+│ │ ├── create-fact-product-performance.ipynb
+│ │ ├── create-fact-seller-performance.ipynb
+│ │
+│ │ ├── validate-dim-date.ipynb
+│ │ ├── validate-dim-customer.ipynb
+│ │ ├── validate-dim-products.ipynb
+│ │ ├── validate-dim-sellers.ipynb
+│ │ ├── validate-dim-geolocation.ipynb
+│ │ ├── validate-fact-orders.ipynb
+│ │ ├── validate-fact-product-performance.ipynb
+│ │ └── validate-fact-seller-performance.ipynb
+│ │
+│ └── README.md # Gold layer documentation
+│
+└── README.md # Project main documentation
 
 🧑‍💻 Author
 
