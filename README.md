@@ -101,10 +101,10 @@ Requirements:
 - [x] Setup AWS & Spark environment  
 - [x] Load RAW CSV data from S3  
 - [x] Generate JSON schemas  
-- [ ] Implement Bronze transformations  
-- [ ] Build Silver layer cleaning  
-- [ ] Create Gold fact & dimension tables  
-- [ ] Add Athena/Glue catalog integration  
+- [x] Implement Bronze transformations  
+- [x] Build Silver layer cleaning  
+- [x] Create Gold fact & dimension tables  
+- [x] Add Athena/Glue catalog integration  
 - [ ] Build dashboards for analytics  
 
 # 📁 Repository Structure
