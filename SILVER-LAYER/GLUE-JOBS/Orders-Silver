@@ -1,0 +1,42 @@
+import sys
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from awsglue.context import GlueContext
+from awsglue.job import Job
+from pyspark.sql import functions as F
+
+args = getResolvedOptions(sys.argv, ['JOB_NAME'])
+
+sc = SparkContext()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+job = Job(glueContext)
+job.init(args['JOB_NAME'], args)
+
+bronze_path = "s3://pedro-datalake-project/bronze/orders/"
+df = spark.read.parquet(bronze_path)
+
+df_clean = df.filter(df["col0"] != "order_id")
+
+df_silver = (
+    df_clean
+    .select(
+        F.col("col0").alias("order_id"),
+        F.col("col1").alias("customer_id"),
+        F.col("col2").alias("order_status"),
+        F.to_timestamp("col3").alias("order_purchase_timestamp"),
+        F.to_timestamp("col4").alias("order_approved_at"),
+        F.to_timestamp("col5").alias("order_delivered_carrier_date"),
+        F.to_timestamp("col6").alias("order_delivered_customer_date"),
+        F.to_timestamp("col7").alias("order_estimated_delivery_date"),
+    )
+    .withColumn("order_status", F.lower("order_status"))
+    .withColumn("audit_timestamp", F.current_timestamp())
+    .filter(F.col("order_id").isNotNull())
+)
+
+silver_path = "s3://pedro-datalake-project/silver/orders/"
+df_silver.write.mode("overwrite").parquet(silver_path)
+
+print("Silver orders written:", silver_path)
+job.commit()
