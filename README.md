@@ -25,7 +25,7 @@ It simulates a real production scenario, including:
 
 ## 🔷 Medallion Architecture
 
-![Medallion Flow](architecture/medallion_flow.png)
+![Medallion Flow](architecture/medallion.png)
 
 ### 🟫 RAW
 Stores original CSV files exactly as received, without transformation.
